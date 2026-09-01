@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>SIABSEN — Scan Absensi (Eksternal)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+  :root{
+    --bg:#f3f4fb; --card:#ffffff; --text:#1f2333; --text-soft:#6b7280; --border:#e7e8f2;
+    --primary:#4f46e5; --primary-dark:#3f37c9; --primary-soft:#eef0ff; --accent:#06b6d4;
+    --success:#16a34a; --success-soft:#dcfce7; --warning:#f59e0b; --warning-soft:#fef3c7;
+    --danger:#ef4444; --danger-soft:#fee2e2; --info-soft:#dbeafe;
+    --shadow:0 10px 30px rgba(79,70,229,.08); --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',sans-serif; background:var(--bg); color:var(--text);
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
+  }
+  h1,h2,h3,.brand{font-family:'Poppins',sans-serif;}
+  .wrap{width:100%; max-width:460px;}
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:20px; margin-bottom:16px;
+  }
+  .brand-row{display:flex; align-items:center; gap:12px; margin-bottom:18px; justify-content:center;}
+  .brand-row .logo{
+    width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,var(--primary),var(--accent));
+    display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px;
+  }
+  .brand-row .name{font-weight:800; font-size:19px;}
+  .brand-row .sub{font-size:12px; color:var(--text-soft);}
+  label{display:block; font-size:12.5px; font-weight:600; margin-bottom:6px; color:var(--text-soft);}
+  input[type=text],input[type=password],input[type=url]{
+    width:100%; padding:11px 12px; border:1.5px solid var(--border); border-radius:10px;
+    font-size:14px; margin-bottom:14px; background:#fff; color:var(--text);
+  }
+  input:focus{outline:none; border-color:var(--primary);}
+  .btn{
+    width:100%; padding:12px; border:none; border-radius:10px; font-weight:700; font-size:14px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-primary{background:var(--primary); color:#fff;}
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-outline{background:transparent; border:1.5px solid var(--border); color:var(--text);}
+  .btn-sm{padding:8px 12px; font-size:12.5px; width:auto;}
+  .err{color:var(--danger); font-size:12.5px; margin:-6px 0 12px; min-height:16px;}
+  .hint{font-size:11.5px; color:var(--text-soft); margin-top:-8px; margin-bottom:14px; line-height:1.5;}
+  .mode-bar{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;}
+  .mode-btn{
+    flex:1; padding:9px 6px; border-radius:10px; border:1.5px solid var(--border); background:#fff;
+    color:var(--text-soft); font-size:12px; font-weight:600; cursor:pointer; text-align:center;
+  }
+  .mode-btn.active{background:var(--primary-soft); border-color:var(--primary); color:var(--primary);}
+  .camera-card{position:relative; background:#000; border-radius:14px; overflow:hidden; aspect-ratio:4/3;}
+  #qr-reader{width:100%; height:100%;}
+  #qr-reader video{width:100% !important; height:100% !important; object-fit:cover;}
+  .scan-frame{
+    position:absolute; inset:12%; border:3px solid rgba(255,255,255,.85); border-radius:16px; pointer-events:none;
+  }
+  .topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .pill{
+    padding:5px 12px; border-radius:999px; font-size:11.5px; font-weight:700; display:inline-flex; gap:6px; align-items:center;
+  }
+  .pill-info{background:var(--info-soft); color:var(--primary);}
+  .pill-danger{background:var(--danger-soft); color:var(--danger);}
+  .result{text-align:center; padding:16px 6px;}
+  .result .ic{font-size:34px; margin-bottom:8px;}
+  .result.success .ic{color:var(--success);}
+  .result.error .ic{color:var(--danger);}
+  .result .nama{font-weight:800; font-size:16px;}
+  .result .meta{font-size:12.5px; color:var(--text-soft); margin-top:2px;}
+  .log{margin-top:10px; max-height:150px; overflow-y:auto;}
+  .log-item{display:flex; justify-content:space-between; font-size:12px; padding:6px 0; border-bottom:1px solid var(--border);}
+  .log-item:last-child{border-bottom:none;}
+  .user-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .user-row .who{font-size:13px;} .user-row .who b{display:block; font-size:14px;}
+  .hidden{display:none !important;}
+  .fs{ font-size:12px;color:var(--text-soft);text-align:center;margin-top:10px; }
+  .fs a{color:var(--primary);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand-row">
+    <div class="logo"><i class="fa-solid fa-qrcode"></i></div>
+    <div>
+      <div class="name">SIABSEN</div>
+      <div class="sub">Scan Absensi (Terminal Eksternal)</div>
+    </div>
+  </div>
+
+  <!-- STEP 0: KONFIGURASI ENDPOINT -->
+  <div class="card" id="cardConfig">
+    <label>URL Web App SIABSEN (Apps Script, akhiran /exec)</label>
+    <input type="url" id="cfgUrl" placeholder="https://script.google.com/macros/s/XXXXXXXX/exec">
+    <div class="hint">Salin dari Deploy &gt; Manage deployments di editor Apps Script proyek SIABSEN Anda. Disimpan hanya di browser ini (localStorage), tidak dikirim ke mana pun selain ke URL itu sendiri.</div>
+    <button class="btn btn-primary" onclick="saveConfig()"><i class="fa-solid fa-check"></i> Simpan & Lanjut</button>
+  </div>
+
+  <!-- STEP 1: LOGIN -->
+  <div class="card hidden" id="cardLogin">
+    <label>Username</label>
+    <input type="text" id="loginUsername" autocomplete="username">
+    <label>Password</label>
+    <input type="password" id="loginPassword" autocomplete="current-password">
+    <div class="err" id="loginErr"></div>
+    <button class="btn btn-primary" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
+    <button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="showConfig()"><i class="fa-solid fa-gear"></i> Ubah URL Web App</button>
+  </div>
+
+  <!-- STEP 2: SCANNER -->
+  <div class="card hidden" id="cardScan">
+    <div class="user-row">
+      <div class="who">Login sebagai<br><b id="whoAmI">-</b></div>
+      <button class="btn btn-outline btn-sm" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
+    </div>
+
+    <div class="mode-bar">
+      <button class="mode-btn active" id="modeOtomatis" onclick="setMode('otomatis')">Otomatis</button>
+      <button class="mode-btn" id="modeMasuk" onclick="setMode('Masuk')">Absen Masuk</button>
+      <button class="mode-btn" id="modePulang" onclick="setMode('Pulang')">Absen Pulang</button>
+    </div>
+
+    <div class="topbar">
+      <span style="font-size:12px;color:var(--text-soft);"><i class="fa-solid fa-circle-info"></i> Arahkan QR siswa ke kamera</span>
+      <span class="pill pill-info" id="statusPill"><i class="fa-solid fa-signal"></i> Siap</span>
+    </div>
+
+    <div class="camera-card">
+      <div id="qr-reader"></div>
+      <div class="scan-frame"></div>
+    </div>
+
+    <div class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="requestCameraPermission()"><i class="fa-solid fa-rotate"></i> Konfirmasi Ulang Izin Kamera</div>
+  </div>
+
+  <!-- HASIL SCAN -->
+  <div class="card hidden" id="cardResult">
+    <div class="result" id="resultBox"></div>
+    <div class="log" id="logList"></div>
+  </div>
+
+  <div class="fs">Halaman ini berjalan mandiri di luar Apps Script (agar kamera tidak diblokir Google), tapi tetap menyimpan absensi ke Spreadsheet SIABSEN yang sama.</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script>
+let ENDPOINT = localStorage.getItem('siabsen_endpoint') || '';
+let SESSION = null; // { username, nama, level }
+let html5QrCode = null;
+let scanMode = 'otomatis'; // otomatis | Masuk | Pulang
+let busy = false;
+let logItems = [];
+
+document.getElementById('cfgUrl').value = ENDPOINT;
+
+function $(id){ return document.getElementById(id); }
+function show(id){ $(id).classList.remove('hidden'); }
+function hide(id){ $(id).classList.add('hidden'); }
+
+/* ---------------- KONFIGURASI ENDPOINT ---------------- */
+function saveConfig(){
+  const url = $('cfgUrl').value.trim();
+  if (!url || !/^https:\/\/.*\/exec\/?$/.test(url)) {
+    alert('URL harus diawali https:// dan diakhiri /exec');
+    return;
+  }
+  ENDPOINT = url.replace(/\/$/, '');
+  localStorage.setItem('siabsen_endpoint', ENDPOINT);
+  hide('cardConfig');
+  const saved = localStorage.getItem('siabsen_session');
+  if (saved) { SESSION = JSON.parse(saved); afterLogin(); }
+  else show('cardLogin');
+}
+function showConfig(){ hide('cardLogin'); hide('cardScan'); hide('cardResult'); show('cardConfig'); }
+
+/* ---------------- PANGGILAN API ---------------- */
+function callApi(action, payload) {
+  payload = payload || {};
+  payload.action = action;
+  // Content-Type text/plain SENGAJA dipakai (bukan application/json) supaya
+  // browser tidak mengirim CORS preflight (OPTIONS) yang tidak didukung
+  // Apps Script Web App — body tetap dikirim & di-parse sebagai JSON di server.
+  return fetch(ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(r => r.json());
+}
+
+/* ---------------- LOGIN ---------------- */
+function doLogin(){
+  const username = $('loginUsername').value.trim();
+  const password = $('loginPassword').value;
+  if (!username || !password) return;
+  $('loginErr').textContent = '';
+  callApi('login', { username, password }).then(res => {
+    if (!res.success) { $('loginErr').textContent = res.message || 'Login gagal.'; return; }
+    SESSION = res.admin;
+    localStorage.setItem('siabsen_session', JSON.stringify(SESSION));
+    afterLogin();
+  }).catch(err => { $('loginErr').textContent = 'Gagal menghubungi server: ' + err; });
+}
+function doLogout(){
+  localStorage.removeItem('siabsen_session');
+  SESSION = null;
+  forceStopScanner();
+  hide('cardScan'); hide('cardResult');
+  show('cardLogin');
+}
+function afterLogin(){
+  hide('cardLogin');
+  $('whoAmI').textContent = SESSION.nama + ' (' + SESSION.level + ')';
+  show('cardScan');
+  show('cardResult');
+  startScanner();
+}
+
+/* ---------------- MODE ---------------- */
+function setMode(mode){
+  scanMode = mode;
+  ['Otomatis','Masuk','Pulang'].forEach(m => {
+    document.getElementById('mode' + m).classList.toggle('active', (m.toLowerCase() === mode.toLowerCase()) || (mode === 'otomatis' && m === 'Otomatis'));
+  });
+}
+
+/* ---------------- KAMERA ---------------- */
+function startScanner(){ forceStopScanner().then(doStartScanner); }
+
+function doStartScanner(){
+  const readerEl = $('qr-reader');
+  readerEl.innerHTML = '';
+  $('statusPill').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Meminta izin...';
+
+  if (!navigator.mediaDevices || !window.isSecureContext) {
+    return showCamErr('Browser tidak mendukung kamera di halaman ini (pastikan HTTPS).');
+  }
+
+  Html5Qrcode.getCameras().then(devices => {
+    if (!devices || !devices.length) return showCamErr('Kamera tidak ditemukan.');
+    const back = devices.find(d => /back|belakang|rear|environment/i.test(d.label || ''));
+    const cameraId = (back || devices[devices.length - 1]).id;
+    html5QrCode = new Html5Qrcode('qr-reader');
+    html5QrCode.start(cameraId, { fps: 12, qrbox: { width: 220, height: 220 }, aspectRatio: 1.33 }, onScanned, () => {})
+      .then(() => { $('statusPill').innerHTML = '<i class="fa-solid fa-signal"></i> Kamera Aktif'; })
+      .catch(err => { html5QrCode = null; showCamErr(describeErr(err)); });
+  }).catch(err => showCamErr(describeErr(err)));
+}
+
+function requestCameraPermission(){
+  forceStopScanner().then(() => {
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(s => { s.getTracks().forEach(t => t.stop()); doStartScanner(); })
+      .catch(err => showCamErr(describeErr(err)));
+  });
+}
+
+function describeErr(err){
+  const msg = String((err && (err.name || err.message)) || err || '');
+  if (/NotAllowedError|Permission denied/i.test(msg)) return 'Izin kamera ditolak. Klik ikon kamera/gembok di address bar browser lalu pilih Izinkan, kemudian klik "Konfirmasi Ulang Izin Kamera".';
+  if (/NotFoundError/i.test(msg)) return 'Kamera tidak ditemukan pada perangkat ini.';
+  if (/NotReadableError/i.test(msg)) return 'Kamera sedang dipakai aplikasi/tab lain.';
+  return 'Tidak dapat mengakses kamera: ' + msg;
+}
+function showCamErr(msg){
+  $('statusPill').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Gagal';
+  renderResult('error', 'fa-camera-slash', 'Kamera Bermasalah', msg);
+}
+function forceStopScanner(){
+  if (!html5QrCode) return Promise.resolve();
+  const inst = html5QrCode; html5QrCode = null;
+  return inst.stop().then(() => inst.clear()).catch(() => {});
+}
+
+/* ---------------- HASIL SCAN ---------------- */
+function onScanned(kode){
+  if (busy) return;
+  busy = true;
+  const forceJenis = scanMode === 'otomatis' ? null : scanMode;
+  callApi('scan', { kode, actor: SESSION.username, forceJenis }).then(res => {
+    busy = false;
+    if (res.success) {
+      renderResult('success', 'fa-circle-check',
+        res.siswa.nama, res.siswa.kelas + ' • Absen ' + res.jenisAbsen + ' • ' + res.waktu);
+      addLog(res.siswa.nama + ' — ' + res.jenisAbsen, res.waktu, true);
+    } else {
+      renderResult('error', res.duplicate ? 'fa-clock' : 'fa-triangle-exclamation',
+        res.duplicate ? (res.siswa ? res.siswa.nama : 'Duplikat') : 'Gagal', res.message);
+      addLog(res.message, '', false);
+    }
+  }).catch(err => {
+    busy = false;
+    renderResult('error', 'fa-wifi', 'Gagal Kirim', 'Tidak dapat menghubungi server: ' + err);
+  });
+}
+function renderResult(type, icon, title, meta){
+  $('resultBox').className = 'result ' + type;
+  $('resultBox').innerHTML = `<div class="ic"><i class="fa-solid ${icon}"></i></div><div class="nama">${title}</div><div class="meta">${meta || ''}</div>`;
+}
+function addLog(text, waktu, ok){
+  logItems.unshift({ text, waktu, ok });
+  logItems = logItems.slice(0, 15);
+  $('logList').innerHTML = logItems.map(it =>
+    `<div class="log-item"><span style="color:${it.ok ? 'var(--success)' : 'var(--danger)'}"><i class="fa-solid ${it.ok ? 'fa-check' : 'fa-xmark'}"></i> ${it.text}</span><span style="color:var(--text-soft)">${it.waktu || ''}</span></div>`
+  ).join('');
+}
+
+/* ---------------- INIT ---------------- */
+(function init(){
+  if (!ENDPOINT) { show('cardConfig'); return; }
+  const saved = localStorage.getItem('siabsen_session');
+  hide('cardConfig');
+  if (saved) { SESSION = JSON.parse(saved); afterLogin(); }
+  else show('cardLogin');
+})();
+</script>
+</body>
+</html>
